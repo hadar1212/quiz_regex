@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Sample Question - Step 2 of 4{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <!-- Header with progress -->
+    <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 16px; display: inline-block; margin-bottom: 15px;">
+            <span style="color: #667eea; font-weight: bold; font-size: 14px;">🎯 STEP 2 OF 4</span>
+        </div>
+        <h1 style="color: #4a5568; margin-bottom: 10px;">🎯 Sample Question</h1>
+        <p style="color: #718096; font-size: 16px;">
+            Here's how the quiz works. Try answering this sample question!
+        </p>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="background: #e2e8f0; height: 6px; border-radius: 3px; margin: 20px 0;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 50%; border-radius: 3px; transition: width 0.3s ease;"></div>
+    </div>
+
+    <!-- Sample Question Display -->
+    <div style="background: #f8fafc; border: 2px solid #667eea; border-radius: 15px; padding: 30px; margin: 20px 0;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: #4a5568; margin: 0;">Sample Question</h2>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button id="sample-help-btn" class="btn highlight-btn" style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); padding: 8px 16px; font-size: 14px; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="toggleRulesModal()">
+                    ❓ Rules
+                </button>
+                <div style="font-size: 18px; color: #667eea; font-weight: bold;">
+                    ⏰ No Timer
+                </div>
+            </div>
+        </div>
+
+        <div class="question-box" style="background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #4a5568; margin-bottom: 20px;">❓ Does this string match this regex?</h3>
+
+            <div style="margin: 25px 0;">
+                <strong style="color: #4a5568;">Regex Pattern:</strong>
+                <div class="regex-display" style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 16px; margin-top: 8px;">
+                    {{ question.regex }}
+                </div>
+            </div>
+
+            <div style="margin: 25px 0;">
+                <strong style="color: #4a5568;">Test String:</strong>
+                <div class="test-string" style="background: #edf2f7; border: 1px solid #cbd5e0; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 16px; margin-top: 8px;">
+                    {{ question.test_string }}
+                </div>
+            </div>
+
+            <div id="sample-answers" style="margin: 30px 0; text-align: center;">
+                <h4 style="color: #4a5568; margin-bottom: 15px;">Your Answer:</h4>
+                <button id="btn-sample-true" class="btn btn-success" onclick="submitSampleAnswer(true)" style="margin: 0 10px; padding: 12px 24px; font-size: 16px;">
+                    ✅ True - It Matches
+                </button>
+                <button id="btn-sample-false" class="btn btn-danger" onclick="submitSampleAnswer(false)" style="margin: 0 10px; padding: 12px 24px; font-size: 16px;">
+                    ❌ False - No Match
+                </button>
+            </div>
+
+            <!-- Sample feedback (hidden initially) -->
+            <div id="sample-feedback" style="display: none; margin-top: 20px; padding: 20px; border-radius: 10px; text-align: center;">
+                <div id="sample-feedback-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div style="text-align: center; margin-top: 30px;">
+        <button id="continue-sample-btn" class="btn" disabled
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       padding: 15px 30px; font-size: 16px; font-weight: bold;
+                       opacity: 0.5; cursor: not-allowed;"
+                onclick="window.location.href='/ready'">
+            Continue to Final Step →
+        </button>
+
+        <p style="color: #718096; font-size: 14px; margin-top: 15px;">
+            Answer the sample question to continue
+        </p>
+    </div>
+</div>
+
+<!-- FULL Rules Modal -->
+<div id="rules-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="position: relative; margin: 5% auto; padding: 0; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="position: sticky; top: 0; background: white; padding: 20px; border-bottom: 1px solid #e2e8f0; border-radius: 10px 10px 0 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: #4a5568;">📚 Regex Rules Reference</h2>
+                <button onclick="toggleRulesModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #718096; padding: 0; width: 30px; height: 30px;">×</button>
+            </div>
+        </div>
+        <div style="padding: 20px;">
+            <!-- Rule 1: Literals -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Literals</h3>
+                <p>Match characters exactly as they appear.</p>
+                <div style="background: #edf2f7; border: 1px solid #cbd5e0; padding: 8px; border-radius: 5px; margin: 8px 0; font-family: 'Courier New', monospace;">
+                    <strong>Example:</strong> <code>a, z, 3, @, _</code>
+                </div>
+            </div>
+
+            <!-- Rule 2: Metacharacters -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Metacharacters</h3>
+                <p>Characters with special meanings:</p>
+                <div style="background: #2d3748; color: #e2e8f0; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; margin: 10px 0;">. ^ $ * + ? { } [ ] ( ) | \</div>
+                <p>If you want to match them literally, you must escape them using <code>\</code>.</p>
+            </div>
+
+            <!-- Rule 3: Character Classes -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Character Classes</h3>
+
+                <h4 style="color: #667eea; margin: 10px 0 8px 0;">a) Basic Character Classes</h4>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[abc]</code> : any one of a, b, or c</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[a-z]</code> : any lowercase letter</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[0-9a-fA-F]</code> : hexadecimal digit</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[^abc]</code> : any character except a, b, or c</li>
+                </ul>
+
+                <h4 style="color: #667eea; margin: 10px 0 8px 0;">b) Predefined (Shorthand) Character Classes</h4>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\d</code> : Digit [0-9]</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\D</code> : Not a digit [^0-9]</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\w</code> : Word char [a-zA-Z0-9_]</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\W</code> : Not word char [^a-zA-Z0-9_]</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\s</code> : Whitespace [ \t\r\n\f\v]</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\S</code> : Not Whitespace</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">.</code> : Any character except newline \n</li>
+                </ul>
+            </div>
+
+            <!-- Rule 4: Quantifiers -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Quantifiers</h3>
+
+                <h4 style="color: #667eea; margin: 10px 0 8px 0;">a) Greedy</h4>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a*</code> : 0 or more a</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a+</code> : 1 or more a</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a?</code> : 0 or 1 a</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n}</code> : Exactly n a</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n,}</code> : n or more a</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n,m}</code> : Between n and m a</li>
+                </ul>
+
+                <h4 style="color: #667eea; margin: 10px 0 8px 0;">b) Non-Greedy</h4>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">*?</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">+?</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">??</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">{n,m}?</code></li>
+                </ul>
+            </div>
+
+            <!-- Rule 5: Anchors -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">5️⃣ Anchors</h3>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">^</code> : Start of a new line</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">$</code> : End of line</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\b</code> : Word boundary</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\B</code> : Not word boundary</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\A</code> : Start of entire string</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\Z</code> : End of entire string</li>
+                </ul>
+            </div>
+
+            <!-- Rule 6: Grouping and Capturing -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">6️⃣ Grouping and Capturing</h3>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">(abc)</code> : Capturing group</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">(?:abc)</code> : Non-capturing group</li>
+                </ul>
+            </div>
+
+            <!-- Rule 7: Alternation -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">7️⃣ Alternation</h3>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a|b</code> : match either "a" or "b"</li>
+                </ul>
+            </div>
+
+            <!-- Rule 8: Escapes and Special Tokens -->
+            <div class="rule-section">
+                <h3 style="color: #4a5568; margin-bottom: 10px;">8️⃣ Escapes and Special Tokens</h3>
+                <ul style="margin: 8px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\n, \t, \r</code> : Newline, tab, carriage return</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\\</code> : A single backslash</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\x41</code> : Hexadecimal byte code (\x41 → "A")</li>
+                    <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\uHHHH</code> : Unicode character (\u03A9 → Ω)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rule-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.highlight-btn {
+    animation: sample-highlight 4s ease-in-out;
+}
+
+@keyframes sample-highlight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.7);
+        transform: scale(1);
+    }
+    15% {
+        box-shadow: 0 0 0 10px rgba(56, 161, 105, 0.3);
+        transform: scale(1.05);
+    }
+    30% {
+        box-shadow: 0 0 0 15px rgba(56, 161, 105, 0.1);
+        transform: scale(1);
+    }
+    45% {
+        box-shadow: 0 0 0 10px rgba(56, 161, 105, 0.3);
+        transform: scale(1.05);
+    }
+    60% {
+        box-shadow: 0 0 0 0 rgba(56, 161, 105, 0);
+        transform: scale(1);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(56, 161, 105, 0);
+        transform: scale(1);
+    }
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+.btn:disabled:hover {
+    transform: none;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let sampleAnswered = false;
+
+function submitSampleAnswer(userAnswer) {
+    if (sampleAnswered) return;
+    sampleAnswered = true;
+
+    // Disable buttons
+    document.getElementById('btn-sample-true').disabled = true;
+    document.getElementById('btn-sample-false').disabled = true;
+
+    const feedback = document.getElementById('sample-feedback');
+    const feedbackContent = document.getElementById('sample-feedback-content');
+    const continueBtn = document.getElementById('continue-sample-btn');
+
+    // Show simple feedback - NO judgment about right/wrong
+    feedbackContent.innerHTML = '✅ <strong>Answer submitted!</strong> Ready to continue.';
+    feedback.style.background = '#c6f6d5';
+    feedback.style.border = '2px solid #38a169';
+    feedback.style.color = '#22543d';
+    feedback.style.display = 'block';
+
+    // Enable continue button
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = '1';
+    continueBtn.style.cursor = 'pointer';
+
+    // Update help text
+    const helpText = continueBtn.nextElementSibling;
+    helpText.textContent = 'Great! Now you know how it works.';
+    helpText.style.color = '#38a169';
+}
+
+// Rules modal functions
+function toggleRulesModal() {
+    const modal = document.getElementById('rules-modal');
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    } else {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('rules-modal');
+    if (event.target === modal) {
+        toggleRulesModal();
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+    if (!sampleAnswered) {
+        if (event.key === '1' || event.key.toLowerCase() === 't') {
+            submitSampleAnswer(true);
+        } else if (event.key === '2' || event.key.toLowerCase() === 'f') {
+            submitSampleAnswer(false);
+        }
+    }
+    
+    if (event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        toggleRulesModal();
+    }
+    
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('rules-modal');
+        if (modal.style.display === 'block') {
+            event.preventDefault();
+            toggleRulesModal();
+        }
+    }
+    
+    if (event.key === 'Enter' && sampleAnswered) {
+        window.location.href = '/ready';
+    }
+});
+
+// Remove highlight animation after completion
+setTimeout(function() {
+    const helpBtn = document.getElementById('sample-help-btn');
+    if (helpBtn) {
+        helpBtn.classList.remove('highlight-btn');
+    }
+}, 4000);
+</script>
+{% endblock %}

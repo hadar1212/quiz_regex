@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Ready to Start - Step 3 of 4{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <!-- Header with progress -->
+    <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 16px; display: inline-block; margin-bottom: 15px;">
+            <span style="color: #667eea; font-weight: bold; font-size: 14px;">🚀 STEP 3 OF 4</span>
+        </div>
+        <h1 style="color: #4a5568; margin-bottom: 10px;">Let's Get Started!</h1>
+        <p style="color: #718096; font-size: 16px;">
+            You're all set! Here's what you need to know before beginning the quiz.
+        </p>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="background: #e2e8f0; height: 6px; border-radius: 3px; margin: 20px 0;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 75%; border-radius: 3px; transition: width 0.3s ease;"></div>
+    </div>
+
+    <!-- Ready info cards -->
+    <div style="display: grid; gap: 20px; margin: 30px 0;">
+        
+        <!-- Quiz Format Card -->
+        <div class="info-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+            <h3 style="margin: 0 0 15px 0; display: flex; align-items: center;">
+                <span style="font-size: 24px; margin-right: 10px;">🎯</span>
+                Quiz Format
+            </h3>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                <li><strong>20 questions</strong> randomly selected</li>
+                <li><strong>True/False format</strong> - Does the string match the regex?</li>
+                <li><strong>No time limit</strong> per question (but timing is tracked)</li>
+                <li><strong>Can't go back</strong> once you answer</li>
+            </ul>
+        </div>
+
+        <!-- Help Available Card -->
+        <div class="info-card" style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); color: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);">
+            <h3 style="margin: 0 0 15px 0; display: flex; align-items: center;">
+                <span style="font-size: 24px; margin-right: 10px;">❓</span>
+                Help Available
+            </h3>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                <li><strong>Rules button</strong> on every question</li>
+                <li><strong>Press 'H'</strong> to quickly open rules</li>
+                <li><strong>Complete regex reference</strong> available</li>
+                <li><strong>No penalty</strong> for checking rules</li>
+            </ul>
+        </div>
+
+        <!-- Controls Card -->
+        <div class="info-card" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); color: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);">
+            <h3 style="margin: 0 0 15px 0; display: flex; align-items: center;">
+                <span style="font-size: 24px; margin-right: 10px;">⌨️</span>
+                Quick Controls
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0;">
+                <div>
+                    <strong>Answer True:</strong><br>
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">1</code> or 
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">T</code>
+                </div>
+                <div>
+                    <strong>Answer False:</strong><br>
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">2</code> or 
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">F</code>
+                </div>
+                <div>
+                    <strong>Open Rules:</strong><br>
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">H</code>
+                </div>
+                <div>
+                    <strong>Close Modal:</strong><br>
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">Escape</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start button -->
+    <div style="text-align: center; margin-top: 40px;">
+        <button class="btn start-btn" 
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                       padding: 20px 40px; font-size: 18px; font-weight: bold;
+                       box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+                       transition: all 0.3s ease;"
+                onclick="startQuiz()">
+            🚀 Start the Quiz!
+        </button>
+        
+        <p style="color: #718096; font-size: 14px; margin-top: 15px;">
+            Ready when you are! Press Enter or click the button above.
+        </p>
+    </div>
+</div>
+
+<style>
+.info-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+.start-btn:active {
+    transform: translateY(0);
+}
+
+/* Subtle animations */
+@keyframes float-in {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.info-card {
+    animation: float-in 0.6s ease-out;
+}
+
+.info-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.info-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function startQuiz() {
+    // Add a nice loading effect
+    const btn = document.querySelector('.start-btn');
+    btn.innerHTML = '⏳ Starting Quiz...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    
+    // Redirect after a brief delay for better UX
+    setTimeout(() => {
+        window.location.href = '/start-quiz';
+    }, 800);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        startQuiz();
+    }
+});
+
+// Add entrance animations
+window.addEventListener('load', function() {
+    const cards = document.querySelectorAll('.info-card');
+    cards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

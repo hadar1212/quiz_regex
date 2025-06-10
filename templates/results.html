@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Regex Quiz - Results{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>🏆 Quiz Complete!</h2>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ correct_count }}</div>
+            <div>Correct Answers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_questions }}</div>
+            <div>Total Questions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ "%.1f"|format(score) }}%</div>
+            <div>Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ "%.0f"|format(duration) }}s</div>
+            <div>Time Taken</div>
+        </div>
+    </div>
+    
+    {% if score >= 80 %}
+        <div style="text-align: center; margin: 20px 0; padding: 20px; background: #c6f6d5; border-radius: 10px; border: 2px solid #48bb78;">
+            <h3 style="color: #22543d;">🌟 Excellent Work!</h3>
+            <p style="color: #2f855a;">You're a regex master! Great pattern recognition skills.</p>
+        </div>
+    {% elif score >= 60 %}
+        <div style="text-align: center; margin: 20px 0; padding: 20px; background: #feebc8; border-radius: 10px; border: 2px solid #ed8936;">
+            <h3 style="color: #7b341e;">👍 Good Job!</h3>
+            <p style="color: #c05621;">Solid understanding of regex patterns. Keep practicing!</p>
+        </div>
+    {% else %}
+        <div style="text-align: center; margin: 20px 0; padding: 20px; background: #fed7d7; border-radius: 10px; border: 2px solid #f56565;">
+            <h3 style="color: #742a2a;">💪 Keep Learning!</h3>
+            <p style="color: #c53030;">Regex can be tricky. Review the patterns and try again!</p>
+        </div>
+    {% endif %}
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ url_for('start_quiz') }}" class="btn">
+            🔄 Take Another Quiz
+        </a>
+        <a href="{{ url_for('index') }}" class="btn" style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);">
+            🏠 Home
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>📋 Detailed Results</h3>
+
+    {% for answer in answers %}
+    <div style="margin: 15px 0; padding: 15px; border-radius: 8px; {% if answer.is_correct == 'YES' %}background: #f0fff4; border-left: 4px solid #48bb78;{% else %}background: #fffaf0; border-left: 4px solid #f56565;{% endif %}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong>Question {{ answer.test_number }}</strong>
+            <div style="display: flex; gap: 15px;">
+                {% if answer.is_correct == 'YES' %}
+                    <span class="result-correct">✅ Correct</span>
+                {% else %}
+                    <span class="result-incorrect">❌ Incorrect</span>
+                {% endif %}
+                <span style="color: #667eea; font-weight: bold;">⏱️ {{ answer.time_to_answer }}s</span>
+            </div>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <strong>Pattern ({{ 'Refactored' if answer.is_regex_refactor == 'YES' else 'Original' }}):</strong>
+            <div class="regex-display" style="margin: 5px 0;">{{ answer.regex }}</div>
+        </div>
+
+        <div style="margin: 10px 0; font-size: 14px;">
+            <strong>Your Answer:</strong> {{ answer.user_answer }}
+            <br>
+            <strong>Response Time:</strong> {{ answer.time_to_answer }} seconds
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

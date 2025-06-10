@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Regex Rules - Step 1 of 4{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <!-- Header with progress -->
+    <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 16px; display: inline-block; margin-bottom: 15px;">
+            <span style="color: #667eea; font-weight: bold; font-size: 14px;">📚 STEP 1 OF 4</span>
+        </div>
+        <h1 style="color: #4a5568; margin-bottom: 10px;">Regex Rules Reference</h1>
+        <p style="color: #718096; font-size: 16px;">
+            These rules will help you during the quiz. You can access them anytime by clicking the "Rules" button!
+        </p>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="background: #e2e8f0; height: 6px; border-radius: 3px; margin: 20px 0;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 25%; border-radius: 3px; transition: width 0.3s ease;"></div>
+    </div>
+
+    <!-- Rules content in a scrollable container -->
+    <div style="max-height: 60vh; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px;">
+
+        <!-- Rule 1: Literals -->
+        <div class="rule-section highlight-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Literals</h3>
+            <p>Match characters exactly as they appear.</p>
+            <div style="background: #edf2f7; border: 1px solid #cbd5e0; padding: 8px; border-radius: 5px; margin: 8px 0; font-family: 'Courier New', monospace;">
+                <strong>Example:</strong> <code>a, z, 3, @, _</code>
+            </div>
+        </div>
+
+        <!-- Rule 2: Metacharacters -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Metacharacters</h3>
+            <p>Characters with special meanings:</p>
+            <div style="background: #2d3748; color: #e2e8f0; padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace; margin: 10px 0;">. ^ $ * + ? { } [ ] ( ) | \</div>
+            <p>If you want to match them literally, you must escape them using <code>\</code>.</p>
+        </div>
+
+        <!-- Rule 3: Character Classes -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Character Classes</h3>
+
+            <h4 style="color: #667eea; margin: 10px 0 8px 0;">a) Basic Character Classes</h4>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[abc]</code> : any one of a, b, or c</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[a-z]</code> : any lowercase letter</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[0-9a-fA-F]</code> : hexadecimal digit</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">[^abc]</code> : any character except a, b, or c</li>
+            </ul>
+
+            <h4 style="color: #667eea; margin: 10px 0 8px 0;">b) Predefined (Shorthand) Character Classes</h4>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\d</code> : Digit [0-9]</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\D</code> : Not a digit [^0-9]</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\w</code> : Word char [a-zA-Z0-9_]</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\W</code> : Not word char [^a-zA-Z0-9_]</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\s</code> : Whitespace [ \t\r\n\f\v]</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\S</code> : Not Whitespace</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">.</code> : Any character except newline \n</li>
+            </ul>
+        </div>
+
+        <!-- Rule 4: Quantifiers -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Quantifiers</h3>
+
+            <h4 style="color: #667eea; margin: 10px 0 8px 0;">a) Greedy</h4>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a*</code> : 0 or more a</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a+</code> : 1 or more a</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a?</code> : 0 or 1 a</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n}</code> : Exactly n a</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n,}</code> : n or more a</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a{n,m}</code> : Between n and m a</li>
+            </ul>
+
+            <h4 style="color: #667eea; margin: 10px 0 8px 0;">b) Non-Greedy</h4>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">*?</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">+?</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">??</code> <code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">{n,m}?</code></li>
+            </ul>
+        </div>
+
+        <!-- Rule 5: Anchors -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">5️⃣ Anchors</h3>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">^</code> : Start of a new line</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">$</code> : End of line</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\b</code> : Word boundary</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\B</code> : Not word boundary</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\A</code> : Start of entire string</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\Z</code> : End of entire string</li>
+            </ul>
+        </div>
+
+        <!-- Rule 6: Grouping and Capturing -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">6️⃣ Grouping and Capturing</h3>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">(abc)</code> : Capturing group</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">(?:abc)</code> : Non-capturing group</li>
+            </ul>
+        </div>
+
+        <!-- Rule 7: Alternation -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">7️⃣ Alternation</h3>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">a|b</code> : match either "a" or "b"</li>
+            </ul>
+        </div>
+
+        <!-- Rule 8: Escapes and Special Tokens -->
+        <div class="rule-section">
+            <h3 style="color: #4a5568; margin-bottom: 10px;">8️⃣ Escapes and Special Tokens</h3>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\n, \t, \r</code> : Newline, tab, carriage return</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\\</code> : A single backslash</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\x41</code> : Hexadecimal byte code (\x41 → "A")</li>
+                <li style="margin: 5px 0;"><code style="background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 3px;">\uHHHH</code> : Unicode character (\u03A9 → Ω)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Highlighted tip -->
+    <div id="rules-tip" class="highlight-tip" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin: 25px 0; text-align: center;">
+        <h3 style="margin: 0 0 8px 0;">💡 Pro Tip</h3>
+        <p style="margin: 0; font-size: 16px;">
+            During the quiz, click the <strong>"❓ Rules"</strong> button anytime to view these rules!
+        </p>
+    </div>
+
+    <!-- Navigation -->
+    <div style="text-align: center; margin-top: 30px;">
+        <button class="btn"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                       padding: 15px 30px; font-size: 16px; font-weight: bold;"
+                onclick="window.location.href='/sample'">
+            Continue to Sample Question →
+        </button>
+
+        <p style="color: #718096; font-size: 14px; margin-top: 15px;">
+            Next: See how the quiz works with a sample question
+        </p>
+    </div>
+</div>
+
+<style>
+.rule-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #ffffff;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Highlighting animation for the tip */
+.highlight-tip {
+    animation: gentle-pulse 3s ease-in-out infinite;
+}
+
+.highlight-section {
+    animation: initial-highlight 4s ease-in-out;
+}
+
+@keyframes gentle-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+}
+
+@keyframes initial-highlight {
+    0% {
+        background: #ffffff;
+        border-left-color: #667eea;
+    }
+    25% {
+        background: #f0f4ff;
+        border-left-color: #4c51bf;
+        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        background: #f0f4ff;
+        border-left-color: #4c51bf;
+    }
+    100% {
+        background: #ffffff;
+        border-left-color: #667eea;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Keyboard shortcut to continue
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        window.location.href = '/sample';
+    }
+});
+</script>
+{% endblock %}

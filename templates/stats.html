@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Regex Quiz - Statistics{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📊 Quiz Statistics</h2>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_quizzes }}</div>
+            <div>Total Quizzes Taken</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ avg_score }}%</div>
+            <div>Average Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_quizzes * 20 }}</div>
+            <div>Total Questions Answered</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">6</div>
+            <div>Regex Patterns Available</div>
+        </div>
+    </div>
+    
+    {% if total_quizzes > 0 %}
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: #edf2f7; border-radius: 10px;">
+            <h3 style="color: #4a5568;">📈 Performance Overview</h3>
+            <p style="color: #718096; margin: 15px 0;">
+                Based on {{ total_quizzes }} completed quiz{{ 's' if total_quizzes != 1 else '' }}, 
+                users average {{ avg_score }}% correct answers.
+            </p>
+            
+            {% if avg_score >= 80 %}
+                <p style="color: #22543d; font-weight: bold;">🌟 Community Performance: Excellent!</p>
+            {% elif avg_score >= 60 %}
+                <p style="color: #7b341e; font-weight: bold;">👍 Community Performance: Good!</p>
+            {% else %}
+                <p style="color: #742a2a; font-weight: bold;">💪 Community Performance: Keep Learning!</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <h3 style="color: #4a5568;">🚀 Be the First!</h3>
+            <p style="color: #718096; margin: 15px 0;">
+                No quizzes have been completed yet. Be the first to test your regex skills!
+            </p>
+        </div>
+    {% endif %}
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('start_quiz') }}" class="btn">
+            🎯 Take Quiz
+        </a>
+        <a href="{{ url_for('index') }}" class="btn" style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);">
+            🏠 Home
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🎯 About This Quiz</h3>
+    
+    <div style="margin: 20px 0;">
+        <h4 style="color: #667eea; margin-bottom: 10px;">📝 Quiz Format</h4>
+        <p style="margin-bottom: 15px;">
+            Each quiz presents 10 randomly selected regex expressions from our database. 
+            For each expression, you'll see both the original regex and a refactored version, 
+            creating 20 total questions per quiz.
+        </p>
+        
+        <h4 style="color: #667eea; margin-bottom: 10px;">🎲 Randomization</h4>
+        <p style="margin-bottom: 15px;">
+            Test strings are randomly selected with a 50% probability of being a correct match 
+            and 50% probability of being an incorrect match. This ensures balanced difficulty 
+            and prevents pattern memorization.
+        </p>
+        
+        <h4 style="color: #667eea; margin-bottom: 10px;">💾 Data Storage</h4>
+        <p style="margin-bottom: 15px;">
+            All quiz results are automatically saved to our MongoDB database, allowing us to 
+            track performance trends and provide meaningful statistics to help improve learning.
+        </p>
+        
+        <h4 style="color: #667eea; margin-bottom: 10px;">🎓 Learning Objectives</h4>
+        <ul style="margin-left: 20px; color: #4a5568;">
+            <li>Understand how regex patterns match against strings</li>
+            <li>Recognize the difference between original and refactored regex expressions</li>
+            <li>Develop intuition for regex pattern matching</li>
+            <li>Practice regex comprehension in a gamified environment</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

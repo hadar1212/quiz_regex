@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Regex Quiz - Consent{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #4a5568; margin-bottom: 10px;">🧩 Regex Quiz Challenge</h1>
+        <p style="color: #718096; font-size: 18px;">Test your regular expression knowledge!</p>
+    </div>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin: 20px 0;">
+        <h2 style="color: #4a5568; margin-bottom: 15px;">📋 Before We Begin</h2>
+        
+        <div style="margin: 20px 0;">
+            <h3 style="color: #667eea; margin-bottom: 10px;">What This Quiz Includes:</h3>
+            <ul style="color: #4a5568; line-height: 1.6;">
+                <li>20 randomly selected regex questions</li>
+                <li>Multiple choice format (True/False)</li>
+                <li>Timer tracking for each question</li>
+                <li>Comprehensive results at the end</li>
+                <li>Help available throughout the quiz</li>
+            </ul>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3 style="color: #667eea; margin-bottom: 10px;">Data Collection:</h3>
+            <ul style="color: #4a5568; line-height: 1.6;">
+                <li>Your answers and response times are temporarily stored</li>
+                <li>Data is only used to show your quiz results</li>
+                <li>No personal information is collected or stored</li>
+                <li>Session data is cleared when you restart or close the browser</li>
+            </ul>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3 style="color: #667eea; margin-bottom: 10px;">Expected Time:</h3>
+            <p style="color: #4a5568; line-height: 1.6;">
+                Approximately 10-15 minutes depending on your regex knowledge and reading speed.
+            </p>
+        </div>
+    </div>
+
+    <div style="background: #edf2f7; border: 1px solid #cbd5e0; border-radius: 10px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #4a5568; margin-bottom: 15px;">✅ Consent</h3>
+        <p style="color: #4a5568; line-height: 1.6; margin-bottom: 15px;">
+            By clicking "I Agree & Continue", you consent to participate in this regex quiz. 
+            Your participation is voluntary and you can stop at any time.
+        </p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+            <label style="display: flex; align-items: center; color: #4a5568; cursor: pointer;">
+                <input type="checkbox" id="consent-check" style="margin-right: 8px; transform: scale(1.2);">
+                I have read and understood the information above
+            </label>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <button id="continue-btn" class="btn" disabled 
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                       padding: 15px 30px; font-size: 16px; font-weight: bold;
+                       opacity: 0.5; cursor: not-allowed;"
+                onclick="proceedToRules()">
+            I Agree & Continue →
+        </button>
+        
+        <p style="color: #718096; font-size: 14px; margin-top: 15px;">
+            Next: Regex rules overview
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('consent-check').addEventListener('change', function() {
+    const continueBtn = document.getElementById('continue-btn');
+    if (this.checked) {
+        continueBtn.disabled = false;
+        continueBtn.style.opacity = '1';
+        continueBtn.style.cursor = 'pointer';
+    } else {
+        continueBtn.disabled = true;
+        continueBtn.style.opacity = '0.5';
+        continueBtn.style.cursor = 'not-allowed';
+    }
+});
+
+function proceedToRules() {
+    const checkbox = document.getElementById('consent-check');
+    if (checkbox.checked) {
+        window.location.href = '/rules';
+    }
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        const checkbox = document.getElementById('consent-check');
+        if (checkbox.checked) {
+            proceedToRules();
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Regex Quiz - Home{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Welcome to the Regex Quiz Challenge!</h2>
+    
+    <div class="question-box">
+        <h3>📝 How it works:</h3>
+        <ul style="margin: 15px 0; padding-left: 20px;">
+            <li><strong>20 Questions:</strong> You'll get 10 regex expressions, each shown in both original and refactored format</li>
+            <li><strong>Match Test:</strong> For each regex, you'll see a test string and need to determine if it matches</li>
+            <li><strong>True or False:</strong> Simply answer whether the string matches the regex pattern</li>
+            <li><strong>Random Selection:</strong> Each test string is randomly chosen from correct or incorrect answers (50/50 chance)</li>
+            <li><strong>Your Progress:</strong> Results are automatically saved to track your performance</li>
+        </ul>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">20</div>
+            <div>Total Questions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">10</div>
+            <div>Regex Patterns</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">50/50</div>
+            <div>True/False Split</div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('rules') }}" class="btn" style="font-size: 18px; padding: 15px 40px;">
+            📚 View Rules & Start Quiz
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🎯 Sample Question</h3>
+    <p><strong>Question:</strong> Does this string match this regex?</p>
+    
+    <div style="margin: 20px 0;">
+        <strong>Regex Pattern:</strong>
+        <div class="regex-display">([\\w]*)://(.*)</div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <strong>Test String:</strong>
+        <div class="test-string">https://example.com</div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <strong>Your Answer:</strong> 
+        <button class="btn btn-success" disabled>True</button>
+        <button class="btn btn-danger" disabled>False</button>
+    </div>
+    
+    <p style="margin-top: 15px; font-style: italic; color: #718096;">
+        In this example, you would select "True" because the string matches the URL pattern.
+    </p>
+</div>
+{% endblock %}
