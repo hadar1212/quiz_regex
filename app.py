@@ -17,19 +17,14 @@ MONGO_URL = "mongodb+srv://muchtar1:muchtar1@cluster0.0r9vavw.mongodb.net/regex-
 def get_mongo_client():
     """Create MongoDB client with proper SSL settings"""
     try:
+        # For MongoDB Atlas, ssl is automatically handled with mongodb+srv://
+        # No need for manual SSL configuration
         client = MongoClient(
             MONGO_URL,
-            ssl=True,
-            ssl_cert_reqs=ssl.CERT_NONE,
-            ssl_ca_certs=None,
-            ssl_certfile=None,
-            ssl_keyfile=None,
-            ssl_crlfile=None,
-            ssl_pem_passphrase=None,
-            ssl_match_hostname=False,
             serverSelectionTimeoutMS=5000,  # 5 second timeout
             connectTimeoutMS=5000,
-            socketTimeoutMS=5000
+            socketTimeoutMS=5000,
+            retryWrites=True
         )
         # Test the connection
         client.admin.command('ping')
@@ -37,7 +32,6 @@ def get_mongo_client():
     except Exception as e:
         print(f"MongoDB connection failed: {e}")
         return None
-
 
 # Try to connect to MongoDB
 client = get_mongo_client()
