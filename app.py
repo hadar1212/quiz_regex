@@ -226,6 +226,8 @@ def answer():
 @app.route('/results')
 def results():
     """Display quiz results and save to MongoDB"""
+    global client, db, collection  # Move this to the top of the function
+
     if 'detailed_answers' not in session:
         return redirect(url_for('consent'))
 
@@ -261,8 +263,7 @@ def results():
             saved_to_db = True
         except Exception as e:
             print(f"❌ Error storing results in MongoDB: {e}")
-            # Try to reconnect
-            global client, db, collection
+            # Try to reconnect - global already declared at function start
             client = get_mongo_client()
             if client:
                 db = client['regex-quiz']
@@ -287,7 +288,6 @@ def results():
                            duration=duration_seconds,
                            answers=detailed_answers,
                            saved_to_db=saved_to_db)
-
 
 @app.route('/restart')
 def restart():
