@@ -5,32 +5,68 @@ from pymongo import MongoClient
 from datetime import datetime
 import uuid
 import os
+import ssl
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
-# MongoDB connection
+# MongoDB connection with SSL fix
 MONGO_URL = "mongodb+srv://muchtar1:muchtar1@cluster0.0r9vavw.mongodb.net/regex-quiz?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(MONGO_URL)
-db = client['regex-quiz']
-collection = db['regex_quiz_results']
+
+
+def get_mongo_client():
+    """Create MongoDB client with proper SSL settings"""
+    try:
+        client = MongoClient(
+            MONGO_URL,
+            ssl=True,
+            ssl_cert_reqs=ssl.CERT_NONE,
+            ssl_ca_certs=None,
+            ssl_certfile=None,
+            ssl_keyfile=None,
+            ssl_crlfile=None,
+            ssl_pem_passphrase=None,
+            ssl_match_hostname=False,
+            serverSelectionTimeoutMS=5000,  # 5 second timeout
+            connectTimeoutMS=5000,
+            socketTimeoutMS=5000
+        )
+        # Test the connection
+        client.admin.command('ping')
+        return client
+    except Exception as e:
+        print(f"MongoDB connection failed: {e}")
+        return None
+
+
+# Try to connect to MongoDB
+client = get_mongo_client()
+if client:
+    db = client['regex-quiz']
+    collection = db['regex_quiz_results']
+    print("✅ MongoDB connected successfully")
+else:
+    print("❌ MongoDB connection failed - running without database")
+    db = None
+    collection = None
+
 
 def load_regex_data_from_file(filename="regex_test_data_fixed.json"):
     """
     Load regex data from a JSON file.
-    If you have a larger database file, replace the hardcoded data above.
     """
     try:
         with open(filename, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"File {filename} not found, using hardcoded data")
-        return {}
+        print(f"File {filename} not found, using fallback data")
+        # Fallback data if file not found
+        return []
+
 
 def generate_quiz():
     """Generate a quiz with 10 expressions (20 questions total)"""
-    # Use the hardcoded data or load from file
-    data = load_regex_data_from_file()  # TODO to load_regex_data_from_file()
+    data = load_regex_data_from_file()
 
     # Select 10 random expressions (or all if less than 10 available)
     selected_expressions = random.sample(data, min(10, len(data)))
@@ -76,22 +112,24 @@ def generate_quiz():
     random.shuffle(questions)
     return questions
 
-# ===== NEW ONBOARDING ROUTES =====
+
+# ===== ONBOARDING ROUTES =====
 
 @app.route('/')
 def consent():
     """Consent form page - Step 1"""
     return render_template('consent.html')
 
+
 @app.route('/rules')
 def rules():
     """Regex rules page - Step 2"""
     return render_template('rules.html')
 
+
 @app.route('/sample')
 def sample():
     """Sample question page - Step 3"""
-    # Use a specific sample question (or get from your JSON data)
     sample_question = {
         "regex": r"([\w]*):\/\/(.*)",
         "test_string": "https://example.com",
@@ -99,36 +137,40 @@ def sample():
     }
     return render_template('sample.html', question=sample_question)
 
+
 @app.route('/ready')
 def ready():
     """Ready to start page - Step 4"""
     return render_template('ready.html')
 
-# ===== MODIFIED EXISTING ROUTES =====
+
+# ===== QUIZ ROUTES =====
 
 @app.route('/index')
 def index():
     """Legacy route - redirect to consent"""
     return redirect(url_for('consent'))
 
-@app.route('/start-quiz')  # Changed from /start_quiz to match new template
+
+@app.route('/start-quiz')
 def start_quiz():
-    """Initialize a new quiz session - Your existing logic"""
+    """Initialize a new quiz session"""
     quiz_questions = generate_quiz()
     session['quiz_id'] = str(uuid.uuid4())
     session['quiz_questions'] = quiz_questions
     session['current_question'] = 0
-    session['user_answers'] = []  # Keep for backwards compatibility
-    session['detailed_answers'] = []  # New detailed format
+    session['user_answers'] = []
+    session['detailed_answers'] = []
     session['start_time'] = datetime.utcnow().isoformat()
 
     return redirect(url_for('quiz'))
 
+
 @app.route('/quiz')
 def quiz():
-    """Display current quiz question - Your existing logic with small modification"""
+    """Display current quiz question"""
     if 'quiz_questions' not in session:
-        return redirect(url_for('consent'))  # Changed from index to consent
+        return redirect(url_for('consent'))
 
     current_q = session['current_question']
     questions = session['quiz_questions']
@@ -142,14 +184,15 @@ def quiz():
                            question_num=current_q + 1,
                            total_questions=len(questions))
 
+
 @app.route('/answer', methods=['POST'])
 def answer():
-    """Process user's answer - Your existing logic unchanged"""
+    """Process user's answer"""
     if 'quiz_questions' not in session:
         return jsonify({'error': 'No active quiz'}), 400
 
-    user_answer = request.json.get('answer')  # True or False
-    time_to_answer = request.json.get('time_to_answer', 0)  # Time in seconds
+    user_answer = request.json.get('answer')
+    time_to_answer = request.json.get('time_to_answer', 0)
     current_q = session['current_question']
     questions = session['quiz_questions']
 
@@ -159,9 +202,9 @@ def answer():
     question = questions[current_q]
     is_correct = (user_answer == question['correct_answer'])
 
-    # Store the answer with new format
+    # Store the answer
     answer_data = {
-        'test_number': current_q + 1,  # Question ID (1-20)
+        'test_number': current_q + 1,
         'regex': question['regex'],
         'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
         'user_answer': user_answer,
@@ -169,23 +212,22 @@ def answer():
         'time_to_answer': time_to_answer
     }
 
-    # Store in session
     if 'detailed_answers' not in session:
         session['detailed_answers'] = []
     session['detailed_answers'].append(answer_data)
 
     session['current_question'] += 1
 
-    # Return only whether there's a next question - NO correct/incorrect info
     return jsonify({
         'next_question': session['current_question'] < len(questions)
     })
 
+
 @app.route('/results')
 def results():
-    """Display quiz results and save to MongoDB - Your existing logic unchanged"""
+    """Display quiz results and save to MongoDB"""
     if 'detailed_answers' not in session:
-        return redirect(url_for('consent'))  # Changed from index to consent
+        return redirect(url_for('consent'))
 
     detailed_answers = session['detailed_answers']
     correct_count = sum(1 for answer in detailed_answers if answer['is_correct'] == 'YES')
@@ -197,7 +239,7 @@ def results():
     end_time = datetime.utcnow()
     duration_seconds = (end_time - start_time).total_seconds()
 
-    # Store results in MongoDB with new format
+    # Store results in MongoDB (with fallback)
     quiz_result = {
         'quiz_id': session.get('quiz_id'),
         'start_time': start_time,
@@ -206,22 +248,46 @@ def results():
         'total_questions': total_questions,
         'correct_answers': correct_count,
         'score_percentage': score,
-        'detailed_answers': detailed_answers  # New detailed format with timing
+        'detailed_answers': detailed_answers
     }
 
-    try:
-        result = collection.insert_one(quiz_result)
-        print(f"Quiz result saved to MongoDB with ID: {result.inserted_id}")
-        print(f"Stored {len(detailed_answers)} detailed answers with timing data")
-    except Exception as e:
-        print(f"Error storing results in MongoDB: {e}")
+    # Try to save to MongoDB
+    saved_to_db = False
+    if collection is not None:
+        try:
+            result = collection.insert_one(quiz_result)
+            print(f"✅ Quiz result saved to MongoDB with ID: {result.inserted_id}")
+            print(f"Stored {len(detailed_answers)} detailed answers")
+            saved_to_db = True
+        except Exception as e:
+            print(f"❌ Error storing results in MongoDB: {e}")
+            # Try to reconnect
+            global client, db, collection
+            client = get_mongo_client()
+            if client:
+                db = client['regex-quiz']
+                collection = db['regex_quiz_results']
+                try:
+                    result = collection.insert_one(quiz_result)
+                    print(f"✅ Reconnected and saved to MongoDB: {result.inserted_id}")
+                    saved_to_db = True
+                except:
+                    print("❌ Reconnection failed, continuing without database")
+
+    if not saved_to_db:
+        print(f"⚠️ Results NOT saved to database. Quiz ID: {quiz_result['quiz_id']}")
+        # You could implement local file storage here as backup
+        # with open(f"results_{quiz_result['quiz_id']}.json", 'w') as f:
+        #     json.dump(quiz_result, f, default=str)
 
     return render_template('results.html',
                            correct_count=correct_count,
                            total_questions=total_questions,
                            score=score,
                            duration=duration_seconds,
-                           answers=detailed_answers)
+                           answers=detailed_answers,
+                           saved_to_db=saved_to_db)
+
 
 @app.route('/restart')
 def restart():
@@ -229,12 +295,17 @@ def restart():
     session.clear()
     return redirect(url_for('consent'))
 
-# Health check route for deployment
+
 @app.route('/health')
 def health():
-    return {'status': 'healthy'}, 200
+    """Health check for deployment"""
+    mongo_status = "connected" if collection is not None else "disconnected"
+    return {
+        'status': 'healthy',
+        'mongodb': mongo_status
+    }, 200
+
 
 if __name__ == '__main__':
-    # Production-ready settings
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
