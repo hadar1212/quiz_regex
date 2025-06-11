@@ -81,6 +81,7 @@ def initialize_quiz_document(quiz_id, questions):
             'unanswered_questions': len(questions),  # Initially all unanswered
             'correct_answers': 0,
             'score_percentage': 0,
+            'average_time_per_question': 0,  # New field for average time
             'status': 'in_progress',
             'answers': answers_array,  # All answers in one array
             'created_at': datetime.utcnow(),
@@ -132,6 +133,11 @@ def update_answer_in_document(quiz_id, test_number, answer_data):
                 not_reached_count = sum(1 for a in answers if a.get('question_status') == 'not_reached')
                 correct_count = sum(1 for a in answers if a.get('is_correct') == 'YES')
 
+                # Calculate average time per question (only for answered questions)
+                total_time = sum(a.get('time_to_answer', 0) for a in answers if
+                                 a.get('question_status') == 'answered' and a.get('time_to_answer') is not None)
+                avg_time = round(total_time / answered_count, 2) if answered_count > 0 else 0
+
                 # Calculate score based on answered questions only (excluding skipped)
                 score = round((correct_count / answered_count * 100), 2) if answered_count > 0 else 0
 
@@ -143,6 +149,7 @@ def update_answer_in_document(quiz_id, test_number, answer_data):
                         'unanswered_questions': not_reached_count,
                         'correct_answers': correct_count,  # ← Updates in real-time!
                         'score_percentage': score,  # ← Updates in real-time!
+                        'average_time_per_question': avg_time,  # ← New real-time average!
                         'updated_at': datetime.utcnow()
                     }
                 }
@@ -156,6 +163,7 @@ def update_answer_in_document(quiz_id, test_number, answer_data):
                 print(
                     f"📊 Real-time Stats: {answered_count} answered, {skipped_count} skipped, {not_reached_count} unanswered")
                 print(f"🎯 Score: {correct_count}/{answered_count} correct = {score}%")
+                print(f"⏱️ Average time per question: {avg_time}s")
                 return True
             else:
                 print(f"⚠️ Could not find document to update stats for quiz {quiz_id}")
@@ -189,6 +197,11 @@ def finalize_quiz_document(quiz_id, session_data):
 
         score = (correct_count / answered_count * 100) if answered_count > 0 else 0
 
+        # Calculate average time per question for final summary
+        total_time = sum(answer.get('time_to_answer', 0) for answer in detailed_answers if
+                         not answer.get('skipped', False) and answer.get('time_to_answer') is not None)
+        avg_time = round(total_time / answered_count, 2) if answered_count > 0 else 0
+
         # Update final statistics
         update_query = {
             '$set': {
@@ -199,6 +212,7 @@ def finalize_quiz_document(quiz_id, session_data):
                 'unanswered_questions': unanswered_count,
                 'correct_answers': correct_count,
                 'score_percentage': score,
+                'average_time_per_question': avg_time,  # Final average time
                 'status': 'completed' if unanswered_count == 0 else 'incomplete',
                 'updated_at': datetime.utcnow()
             }
@@ -474,6 +488,11 @@ def results():
     # Get unanswered questions from document
     unanswered_count, unanswered_questions = get_unanswered_questions_from_document(quiz_id)
 
+    # Calculate average time per question for display
+    total_answered_time = sum(answer.get('time_to_answer', 0) for answer in detailed_answers if
+                              not answer.get('skipped', False) and answer.get('time_to_answer') is not None)
+    avg_time_per_question = round(total_answered_time / answered_count, 1) if answered_count > 0 else 0
+
     # Finalize the quiz document with final statistics
     finalize_success = finalize_quiz_document(quiz_id, session)
 
@@ -492,7 +511,8 @@ def results():
                            saved_to_db=finalize_success,
                            skipped_count=skipped_count,
                            unanswered_count=unanswered_count,
-                           unanswered_questions=unanswered_questions)
+                           unanswered_questions=unanswered_questions,
+                           avg_time_per_question=avg_time_per_question)
 
 
 @app.route('/restart')
@@ -510,6 +530,29 @@ def health():
         'status': 'healthy',
         'mongodb': mongo_status
     }, 200
+
+
+@app.route('/fix-missing-fields')
+def fix_missing_fields():
+    """Add missing average_time_per_question field to existing documents"""
+    if quiz_answers_collection is None:
+        return jsonify({'error': 'Database not available'}), 500
+
+    try:
+        # Find documents missing the field
+        result = quiz_answers_collection.update_many(
+            {"average_time_per_question": {"$exists": False}},
+            {"$set": {"average_time_per_question": 0}}
+        )
+
+        return jsonify({
+            'status': 'success',
+            'message': f'Added average_time_per_question field to {result.modified_count} documents',
+            'modified_count': result.modified_count
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/debug-quiz/<quiz_id>')
@@ -535,7 +578,8 @@ def debug_quiz(quiz_id):
         document['summary'] = {
             'answered_questions': answered,
             'skipped_questions': skipped,
-            'unanswered_questions': not_reached
+            'unanswered_questions': not_reached,
+            'average_time_per_question': document.get('average_time_per_question', 0)
         }
 
         return jsonify(document)
