@@ -84,6 +84,15 @@ def initialize_quiz_document(quiz_id, questions):
             'average_time_per_question': 0,  # New field for average time
             'status': 'in_progress',
             'answers': answers_array,  # All answers in one array
+            'demographics': {
+                'gender': None,
+                'age': None,
+                'education': None,
+                'years_of_experience': None,
+                'prior_formal_methods': None,
+                'submitted': False
+            },
+
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
@@ -322,6 +331,59 @@ def generate_quiz():
 
 # ===== ONBOARDING ROUTES =====
 
+@app.route('/demographics/<quiz_id>')
+def demographics_form(quiz_id):
+    """Show optional demographic form"""
+    return render_template('demographics.html', quiz_id=quiz_id)
+
+
+@app.route('/submit-demographics/<quiz_id>', methods=['POST'])
+def submit_demographics(quiz_id):
+    """Save demographic data and redirect to results"""
+    if quiz_answers_collection is None:
+        return jsonify({'error': 'Database not available'}), 500
+
+    try:
+        # Get demographic data from form
+        demographics_data = {
+            'gender': request.form.get('gender') or None,
+            'age': request.form.get('age') or None,
+            'education': request.form.get('education') or None,
+            'years_of_experience': request.form.get('years_of_experience') or None,
+            'prior_formal_methods': request.form.get('prior_formal_methods') or None,
+            'submitted': True
+        }
+
+        # Update the document with demographic data
+        result = quiz_answers_collection.update_one(
+            {'quiz_id': quiz_id},
+            {
+                '$set': {
+                    'demographics': demographics_data,
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+
+        if result.modified_count > 0:
+            print(f"✅ Demographics saved for quiz {quiz_id}")
+        else:
+            print(f"⚠️ No document found to update demographics for quiz {quiz_id}")
+
+        # Redirect to results
+        return redirect(url_for('show_results', quiz_id=quiz_id))
+
+    except Exception as e:
+        print(f"❌ Error saving demographics: {e}")
+        # Still redirect to results even if demographics fail
+        return redirect(url_for('show_results', quiz_id=quiz_id))
+
+@app.route('/skip-demographics/<quiz_id>')
+def skip_demographics(quiz_id):
+    """Skip demographics and go directly to results"""
+    return redirect(url_for('show_results', quiz_id=quiz_id))
+
+
 @app.route('/')
 def consent():
     """Consent form page - Step 1"""
@@ -389,14 +451,13 @@ def quiz():
     questions = session['quiz_questions']
 
     if current_q >= len(questions):
-        return redirect(url_for('results'))
+        return redirect(url_for('finish_quiz'))  # ← CORRECT! Goes to demographics first
 
     question = questions[current_q]
     return render_template('quiz.html',
                            question=question,
                            question_num=current_q + 1,
                            total_questions=len(questions))
-
 
 @app.route('/answer', methods=['POST'])
 def answer():
@@ -461,6 +522,66 @@ def answer():
         'updated': update_success
     })
 
+
+@app.route('/results/<quiz_id>')
+def show_results(quiz_id):
+    """Display quiz results"""
+    # Check if we have session data, if not redirect to consent
+    if 'detailed_answers' not in session:
+        return redirect(url_for('consent'))
+
+    detailed_answers = session['detailed_answers']
+    session_quiz_id = session.get('quiz_id')
+
+    # Use the quiz_id from URL parameter or fall back to session
+    active_quiz_id = quiz_id or session_quiz_id
+
+    # Calculate statistics
+    correct_count = sum(1 for answer in detailed_answers if answer.get('is_correct') == 'YES')
+    skipped_count = sum(1 for answer in detailed_answers if answer.get('skipped', False))
+    answered_count = len(detailed_answers) - skipped_count
+    total_questions = len(session.get('quiz_questions', []))
+
+    # Calculate score based on answered questions only
+    score = (correct_count / answered_count * 100) if answered_count > 0 else 0
+
+    # Calculate completion time
+    start_time = datetime.fromisoformat(session.get('start_time', datetime.utcnow().isoformat()))
+    end_time = datetime.utcnow()
+    duration_seconds = (end_time - start_time).total_seconds()
+
+    # Get unanswered questions from document
+    unanswered_count, unanswered_questions = get_unanswered_questions_from_document(active_quiz_id)
+
+    # Calculate average time per question for display
+    total_answered_time = sum(answer.get('time_to_answer', 0) for answer in detailed_answers if
+                              not answer.get('skipped', False) and answer.get('time_to_answer') is not None)
+    avg_time_per_question = round(total_answered_time / answered_count, 1) if answered_count > 0 else 0
+
+    # Finalize the quiz document with final statistics
+    finalize_success = finalize_quiz_document(active_quiz_id, session)
+
+    if finalize_success:
+        print(
+            f"✅ Quiz {active_quiz_id} finalized: {answered_count} answered, {skipped_count} skipped, {unanswered_count} unanswered")
+    else:
+        print(f"⚠️ Failed to finalize quiz document for {active_quiz_id}")
+
+    return render_template('results.html',
+                           correct_count=correct_count,
+                           total_questions=total_questions,
+                           score=score,
+                           duration=duration_seconds,
+                           answers=detailed_answers,
+                           saved_to_db=finalize_success,
+                           skipped_count=skipped_count,
+                           unanswered_count=unanswered_count,
+                           unanswered_questions=unanswered_questions,
+                           avg_time_per_question=avg_time_per_question)
+
+
+# 5. UPDATE YOUR /fix-missing-fields ROUTE:
+# Find your existing /fix-missing-fields route and REPLACE it with:
 
 @app.route('/results')
 def results():
@@ -534,26 +655,41 @@ def health():
 
 @app.route('/fix-missing-fields')
 def fix_missing_fields():
-    """Add missing average_time_per_question field to existing documents"""
+    """Add missing fields to existing documents"""
     if quiz_answers_collection is None:
         return jsonify({'error': 'Database not available'}), 500
 
     try:
-        # Find documents missing the field
-        result = quiz_answers_collection.update_many(
+        # Add missing average_time_per_question field
+        result1 = quiz_answers_collection.update_many(
             {"average_time_per_question": {"$exists": False}},
             {"$set": {"average_time_per_question": 0}}
         )
 
+        # Add missing demographics structure
+        result2 = quiz_answers_collection.update_many(
+            {"demographics": {"$exists": False}},
+            {"$set": {
+                "demographics": {
+                    "gender": None,
+                    "age": None,
+                    "education": None,
+                    "years_of_experience": None,
+                    "prior_formal_methods": None,
+                    "submitted": False
+                }
+            }}
+        )
+
         return jsonify({
             'status': 'success',
-            'message': f'Added average_time_per_question field to {result.modified_count} documents',
-            'modified_count': result.modified_count
+            'message': f'Fixed {result1.modified_count} documents with missing average_time_per_question and {result2.modified_count} documents with missing demographics',
+            'average_time_fixed': result1.modified_count,
+            'demographics_fixed': result2.modified_count
         })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/debug-quiz/<quiz_id>')
 def debug_quiz(quiz_id):
@@ -579,13 +715,26 @@ def debug_quiz(quiz_id):
             'answered_questions': answered,
             'skipped_questions': skipped,
             'unanswered_questions': not_reached,
-            'average_time_per_question': document.get('average_time_per_question', 0)
+            'average_time_per_question': document.get('average_time_per_question', 0),
+            'demographics_submitted': document.get('demographics', {}).get('submitted', False)  # ADD THIS LINE
+
         }
 
         return jsonify(document)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/finish-quiz')
+def finish_quiz():
+    """Finish the quiz and redirect to demographics"""
+    quiz_id = session.get('quiz_id')
+    if not quiz_id:
+        return redirect(url_for('index'))
+
+    # Redirect to demographics form
+    return redirect(url_for('demographics_form', quiz_id=quiz_id))
 
 
 if __name__ == '__main__':
