@@ -33,7 +33,11 @@
         </div>
         <div class="stat-card">
             <div class="stat-number">{{ "%.0f"|format(duration) }}s</div>
-            <div>Time Taken</div>
+            <div>Total Time</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ "%.1f"|format(avg_time_per_question) }}s</div>
+            <div>Avg Time/Question</div>
         </div>
     </div>
 
