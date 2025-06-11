@@ -33,16 +33,215 @@ def get_mongo_client():
         print(f"MongoDB connection failed: {e}")
         return None
 
+
 # Try to connect to MongoDB
 client = get_mongo_client()
 if client:
     db = client['regex-quiz']
-    collection = db['regex_quiz_results']
+    quiz_answers_collection = db['quiz_answers']  # Single collection only
     print("✅ MongoDB connected successfully")
 else:
     print("❌ MongoDB connection failed - running without database")
     db = None
-    collection = None
+    quiz_answers_collection = None
+
+
+def initialize_quiz_document(quiz_id, questions):
+    """Create ONE document with array of all questions initialized with null values"""
+    if quiz_answers_collection is None:
+        return False
+
+    try:
+        # Create array of answer objects, all initialized with null
+        answers_array = []
+        for i, question in enumerate(questions):
+            answer_record = {
+                'test_number': i + 1,
+                'regex': question['regex'],
+                'test_string': question['test_string'],
+                'correct_answer': question['correct_answer'],
+                'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
+                'user_answer': None,  # Start with null
+                'is_correct': None,  # Start with null
+                'time_to_answer': None,  # Start with null
+                'skipped': None,  # Start with null
+                'question_status': 'not_reached'  # Status: not_reached, answered, skipped
+            }
+            answers_array.append(answer_record)
+
+        # Create the main quiz document
+        quiz_document = {
+            'quiz_id': quiz_id,
+            'start_time': datetime.utcnow(),
+            'end_time': None,
+            'total_duration_seconds': None,
+            'total_questions': len(questions),
+            'answered_questions': 0,
+            'skipped_questions': 0,
+            'unanswered_questions': len(questions),  # Initially all unanswered
+            'correct_answers': 0,
+            'score_percentage': 0,
+            'status': 'in_progress',
+            'answers': answers_array,  # All answers in one array
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        }
+
+        # Insert the document
+        result = quiz_answers_collection.insert_one(quiz_document)
+        print(f"✅ Initialized quiz document for {quiz_id} with {len(questions)} questions")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error initializing quiz document: {e}")
+        return False
+
+
+def update_answer_in_document(quiz_id, test_number, answer_data):
+    """Update specific answer in the answers array AND update summary statistics"""
+    if quiz_answers_collection is None:
+        return False
+
+    try:
+        # First, update the specific answer in the array
+        update_query = {
+            '$set': {
+                f'answers.{test_number - 1}.user_answer': answer_data.get('user_answer'),
+                f'answers.{test_number - 1}.is_correct': answer_data.get('is_correct'),
+                f'answers.{test_number - 1}.time_to_answer': answer_data.get('time_to_answer'),
+                f'answers.{test_number - 1}.skipped': answer_data.get('skipped', False),
+                f'answers.{test_number - 1}.question_status': answer_data.get('question_status'),
+                'updated_at': datetime.utcnow()
+            }
+        }
+
+        result = quiz_answers_collection.update_one(
+            {'quiz_id': quiz_id},
+            update_query
+        )
+
+        if result.modified_count > 0:
+            # Now recalculate and update summary statistics
+            document = quiz_answers_collection.find_one({'quiz_id': quiz_id})
+            if document:
+                answers = document.get('answers', [])
+
+                # Count current statistics from the answers array
+                answered_count = sum(1 for a in answers if a.get('question_status') == 'answered')
+                skipped_count = sum(1 for a in answers if a.get('question_status') == 'skipped')
+                not_reached_count = sum(1 for a in answers if a.get('question_status') == 'not_reached')
+                correct_count = sum(1 for a in answers if a.get('is_correct') == 'YES')
+
+                # Calculate score based on answered questions only (excluding skipped)
+                score = round((correct_count / answered_count * 100), 2) if answered_count > 0 else 0
+
+                # Update summary statistics in real-time
+                summary_update = {
+                    '$set': {
+                        'answered_questions': answered_count,
+                        'skipped_questions': skipped_count,
+                        'unanswered_questions': not_reached_count,
+                        'correct_answers': correct_count,  # ← Updates in real-time!
+                        'score_percentage': score,  # ← Updates in real-time!
+                        'updated_at': datetime.utcnow()
+                    }
+                }
+
+                quiz_answers_collection.update_one(
+                    {'quiz_id': quiz_id},
+                    summary_update
+                )
+
+                print(f"✅ Updated answer for quiz {quiz_id}, question {test_number}")
+                print(
+                    f"📊 Real-time Stats: {answered_count} answered, {skipped_count} skipped, {not_reached_count} unanswered")
+                print(f"🎯 Score: {correct_count}/{answered_count} correct = {score}%")
+                return True
+            else:
+                print(f"⚠️ Could not find document to update stats for quiz {quiz_id}")
+                return False
+        else:
+            print(f"⚠️ No document found to update for quiz {quiz_id}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Error updating answer: {e}")
+        return False
+
+
+def finalize_quiz_document(quiz_id, session_data):
+    """Update final quiz statistics in the document"""
+    if quiz_answers_collection is None:
+        return False
+
+    try:
+        # Calculate final statistics
+        detailed_answers = session_data.get('detailed_answers', [])
+        start_time = datetime.fromisoformat(session_data.get('start_time', datetime.utcnow().isoformat()))
+        end_time = datetime.utcnow()
+        duration_seconds = (end_time - start_time).total_seconds()
+
+        correct_count = sum(1 for answer in detailed_answers if answer.get('is_correct') == 'YES')
+        skipped_count = sum(1 for answer in detailed_answers if answer.get('skipped', False))
+        answered_count = len(detailed_answers) - skipped_count
+        total_questions = len(session_data.get('quiz_questions', []))
+        unanswered_count = total_questions - len(detailed_answers)
+
+        score = (correct_count / answered_count * 100) if answered_count > 0 else 0
+
+        # Update final statistics
+        update_query = {
+            '$set': {
+                'end_time': end_time,
+                'total_duration_seconds': duration_seconds,
+                'answered_questions': answered_count,
+                'skipped_questions': skipped_count,
+                'unanswered_questions': unanswered_count,
+                'correct_answers': correct_count,
+                'score_percentage': score,
+                'status': 'completed' if unanswered_count == 0 else 'incomplete',
+                'updated_at': datetime.utcnow()
+            }
+        }
+
+        result = quiz_answers_collection.update_one(
+            {'quiz_id': quiz_id},
+            update_query
+        )
+
+        if result.modified_count > 0:
+            print(f"✅ Finalized quiz document for {quiz_id}")
+            return True
+        else:
+            print(f"⚠️ No document found to finalize for quiz {quiz_id}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Error finalizing quiz document: {e}")
+        return False
+
+
+def get_unanswered_questions_from_document(quiz_id):
+    """Get unanswered questions from the document"""
+    if quiz_answers_collection is None:
+        return 0, []
+
+    try:
+        document = quiz_answers_collection.find_one({'quiz_id': quiz_id})
+        if not document:
+            return 0, []
+
+        unanswered_questions = []
+        for answer in document.get('answers', []):
+            if answer.get('question_status') == 'not_reached':
+                unanswered_questions.append(answer.get('test_number'))
+
+        unanswered_questions.sort()
+        return len(unanswered_questions), unanswered_questions
+
+    except Exception as e:
+        print(f"❌ Error getting unanswered questions: {e}")
+        return 0, []
 
 
 def load_regex_data_from_file(filename="regex_test_data_fixed.json"):
@@ -148,15 +347,21 @@ def index():
 
 @app.route('/start-quiz')
 def start_quiz():
-    """Initialize a new quiz session"""
+    """Initialize a new quiz session with single document setup"""
     quiz_questions = generate_quiz()
-    session['quiz_id'] = str(uuid.uuid4())
+    quiz_id = str(uuid.uuid4())
+
+    # Initialize quiz document with all questions as null
+    initialize_quiz_document(quiz_id, quiz_questions)
+
+    session['quiz_id'] = quiz_id
     session['quiz_questions'] = quiz_questions
     session['current_question'] = 0
     session['user_answers'] = []
     session['detailed_answers'] = []
     session['start_time'] = datetime.utcnow().isoformat()
 
+    print(f"🚀 Started quiz {quiz_id} with {len(quiz_questions)} questions")
     return redirect(url_for('quiz'))
 
 
@@ -181,7 +386,7 @@ def quiz():
 
 @app.route('/answer', methods=['POST'])
 def answer():
-    """Process user's answer or skip"""
+    """Process user's answer or skip and update document in real-time"""
     if 'quiz_questions' not in session:
         return jsonify({'error': 'No active quiz'}), 400
 
@@ -190,36 +395,47 @@ def answer():
     is_skipped = request.json.get('skipped', False)
     current_q = session['current_question']
     questions = session['quiz_questions']
+    quiz_id = session.get('quiz_id')
 
     if current_q >= len(questions):
         return jsonify({'error': 'Quiz completed'}), 400
 
     question = questions[current_q]
+    test_number = current_q + 1
 
     # Handle skipped questions
     if is_skipped:
         answer_data = {
-            'test_number': current_q + 1,
+            'test_number': test_number,
             'regex': question['regex'],
             'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
-            'user_answer': 'SKIPPED',
+            'user_answer': None,  # Keep as null for skipped
             'is_correct': 'SKIPPED',
             'time_to_answer': time_to_answer,
-            'skipped': True
+            'skipped': True,
+            'question_status': 'skipped'
         }
     else:
         # Handle normal answers
         is_correct = (user_answer == question['correct_answer'])
         answer_data = {
-            'test_number': current_q + 1,
+            'test_number': test_number,
             'regex': question['regex'],
             'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
             'user_answer': user_answer,
             'is_correct': 'YES' if is_correct else 'NO',
             'time_to_answer': time_to_answer,
-            'skipped': False
+            'skipped': False,
+            'question_status': 'answered'
         }
 
+    # Update document in real-time
+    update_success = update_answer_in_document(quiz_id, test_number, answer_data)
+
+    if not update_success:
+        print(f"⚠️ Failed to update document for question {test_number}")
+
+    # Keep in session for backward compatibility
     if 'detailed_answers' not in session:
         session['detailed_answers'] = []
     session['detailed_answers'].append(answer_data)
@@ -227,25 +443,25 @@ def answer():
     session['current_question'] += 1
 
     return jsonify({
-        'next_question': session['current_question'] < len(questions)
+        'next_question': session['current_question'] < len(questions),
+        'updated': update_success
     })
 
 
 @app.route('/results')
 def results():
-    """Display quiz results and save to MongoDB"""
-    global client, db, collection
-
+    """Display quiz results and finalize the document"""
     if 'detailed_answers' not in session:
         return redirect(url_for('consent'))
 
     detailed_answers = session['detailed_answers']
+    quiz_id = session.get('quiz_id')
 
-    # Calculate correct answers and answered questions (excluding skipped)
+    # Calculate statistics
     correct_count = sum(1 for answer in detailed_answers if answer.get('is_correct') == 'YES')
     skipped_count = sum(1 for answer in detailed_answers if answer.get('skipped', False))
     answered_count = len(detailed_answers) - skipped_count
-    total_questions = len(detailed_answers)
+    total_questions = len(session.get('quiz_questions', []))
 
     # Calculate score based on answered questions only
     score = (correct_count / answered_count * 100) if answered_count > 0 else 0
@@ -255,45 +471,17 @@ def results():
     end_time = datetime.utcnow()
     duration_seconds = (end_time - start_time).total_seconds()
 
-    # Store results in MongoDB (with fallback)
-    quiz_result = {
-        'quiz_id': session.get('quiz_id'),
-        'start_time': start_time,
-        'end_time': end_time,
-        'total_duration_seconds': duration_seconds,
-        'total_questions': total_questions,
-        'answered_questions': answered_count,
-        'skipped_questions': skipped_count,
-        'correct_answers': correct_count,
-        'score_percentage': score,
-        'detailed_answers': detailed_answers
-    }
+    # Get unanswered questions from document
+    unanswered_count, unanswered_questions = get_unanswered_questions_from_document(quiz_id)
 
-    # Try to save to MongoDB
-    saved_to_db = False
-    if collection is not None:
-        try:
-            result = collection.insert_one(quiz_result)
-            print(f"✅ Quiz result saved to MongoDB with ID: {result.inserted_id}")
-            print(
-                f"Stored {len(detailed_answers)} detailed answers ({answered_count} answered, {skipped_count} skipped)")
-            saved_to_db = True
-        except Exception as e:
-            print(f"❌ Error storing results in MongoDB: {e}")
-            # Try to reconnect
-            client = get_mongo_client()
-            if client:
-                db = client['regex-quiz']
-                collection = db['regex_quiz_results']
-                try:
-                    result = collection.insert_one(quiz_result)
-                    print(f"✅ Reconnected and saved to MongoDB: {result.inserted_id}")
-                    saved_to_db = True
-                except:
-                    print("❌ Reconnection failed, continuing without database")
+    # Finalize the quiz document with final statistics
+    finalize_success = finalize_quiz_document(quiz_id, session)
 
-    if not saved_to_db:
-        print(f"⚠️ Results NOT saved to database. Quiz ID: {quiz_result['quiz_id']}")
+    if finalize_success:
+        print(
+            f"✅ Quiz {quiz_id} finalized: {answered_count} answered, {skipped_count} skipped, {unanswered_count} unanswered")
+    else:
+        print(f"⚠️ Failed to finalize quiz document for {quiz_id}")
 
     return render_template('results.html',
                            correct_count=correct_count,
@@ -301,7 +489,12 @@ def results():
                            score=score,
                            duration=duration_seconds,
                            answers=detailed_answers,
-                           saved_to_db=saved_to_db)
+                           saved_to_db=finalize_success,
+                           skipped_count=skipped_count,
+                           unanswered_count=unanswered_count,
+                           unanswered_questions=unanswered_questions)
+
+
 @app.route('/restart')
 def restart():
     """Clear session and restart quiz"""
@@ -312,11 +505,43 @@ def restart():
 @app.route('/health')
 def health():
     """Health check for deployment"""
-    mongo_status = "connected" if collection is not None else "disconnected"
+    mongo_status = "connected" if quiz_answers_collection is not None else "disconnected"
     return {
         'status': 'healthy',
         'mongodb': mongo_status
     }, 200
+
+
+@app.route('/debug-quiz/<quiz_id>')
+def debug_quiz(quiz_id):
+    """Debug endpoint to see the quiz document"""
+    if quiz_answers_collection is None:
+        return jsonify({'error': 'Database not available'}), 500
+
+    try:
+        # Get the quiz document
+        document = quiz_answers_collection.find_one({'quiz_id': quiz_id}, {'_id': 0})
+
+        if not document:
+            return jsonify({'error': 'Quiz not found'}), 404
+
+        # Count different statuses from answers array
+        answers = document.get('answers', [])
+        answered = sum(1 for a in answers if a.get('question_status') == 'answered')
+        skipped = sum(1 for a in answers if a.get('question_status') == 'skipped')
+        not_reached = sum(1 for a in answers if a.get('question_status') == 'not_reached')
+
+        # Add summary to response
+        document['summary'] = {
+            'answered_questions': answered,
+            'skipped_questions': skipped,
+            'unanswered_questions': not_reached
+        }
+
+        return jsonify(document)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

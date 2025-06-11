@@ -6,8 +6,7 @@
 <div class="card">
     <h2>🏆 Quiz Complete!</h2>
     
-    {% set skipped_count = answers | selectattr('skipped', 'equalto', true) | list | length %}
-    {% set answered_count = total_questions - skipped_count %}
+    {% set answered_count = total_questions - skipped_count - unanswered_count %}
 
     <div class="stats">
         <div class="stat-card">
@@ -22,9 +21,15 @@
             <div class="stat-number">{{ skipped_count }}</div>
             <div>Questions Skipped</div>
         </div>
+        {% if unanswered_count > 0 %}
+        <div class="stat-card" style="background: #fed7d7; border: 1px solid #f56565;">
+            <div class="stat-number" style="color: #c53030;">{{ unanswered_count }}</div>
+            <div style="color: #742a2a;">Never Reached</div>
+        </div>
+        {% endif %}
         <div class="stat-card">
             <div class="stat-number">{{ "%.1f"|format(score) }}%</div>
-            <div>Score {% if skipped_count > 0 %}(of answered){% endif %}</div>
+            <div>Score {% if skipped_count > 0 or unanswered_count > 0 %}(of answered){% endif %}</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">{{ "%.0f"|format(duration) }}s</div>
@@ -49,12 +54,30 @@
         </div>
     {% endif %}
 
-    {% if skipped_count > 0 %}
+    {% if skipped_count > 0 or unanswered_count > 0 %}
         <div style="text-align: center; margin: 20px 0; padding: 15px; background: #fef5e7; border-radius: 10px; border: 2px solid #ed8936;">
-            <h4 style="color: #7b341e; margin: 0 0 8px 0;">📝 Note</h4>
+            <h4 style="color: #7b341e; margin: 0 0 8px 0;">📝 Data Collection Note</h4>
             <p style="color: #c05621; margin: 0;">
-                Score calculated based on {{ answered_count }} answered questions.
-                Consider retaking to answer all {{ total_questions }} questions!
+                {% if unanswered_count > 0 %}
+                    <strong>{{ unanswered_count }} questions were never reached</strong> (quiz ended early).
+                {% endif %}
+                {% if skipped_count > 0 %}
+                    <strong>{{ skipped_count }} questions were skipped</strong> (user clicked skip).
+                {% endif %}
+                {% if answered_count > 0 %}
+                    Score calculated based on {{ answered_count }} answered questions.
+                {% endif %}
+                <br><small>All data has been saved for research analysis.</small>
+            </p>
+        </div>
+    {% endif %}
+
+    {% if unanswered_count > 0 %}
+        <div style="text-align: center; margin: 20px 0; padding: 15px; background: #fed7d7; border-radius: 10px; border: 2px solid #f56565;">
+            <h4 style="color: #742a2a; margin: 0 0 8px 0;">⚠️ Incomplete Quiz</h4>
+            <p style="color: #c53030; margin: 0;">
+                Questions {{ unanswered_questions | join(', ') }} were never reached because the quiz ended early.
+                <br><small>These remain as NULL in the database (different from skipped questions).</small>
             </p>
         </div>
     {% endif %}
@@ -106,12 +129,45 @@
             {% if answer.skipped %}
                 <span style="color: #ed8936; font-weight: bold;">Skipped</span>
             {% else %}
-                {{ answer.user_answer }}
+                <span style="{% if answer.is_correct == 'YES' %}color: #38a169;{% else %}color: #f56565;{% endif %}">
+                    {{ "True" if answer.user_answer else "False" }}
+                </span>
             {% endif %}
             <br>
             <strong>Response Time:</strong> {{ answer.time_to_answer }} seconds
         </div>
     </div>
     {% endfor %}
+
+    {% if unanswered_count > 0 %}
+    <div style="margin: 20px 0; padding: 20px; border-radius: 8px; background: #fed7d7; border-left: 4px solid #f56565;">
+        <h4 style="color: #742a2a; margin: 0 0 15px 0;">❌ Questions Never Reached</h4>
+        <p style="color: #c53030; margin: 0 0 10px 0;">
+            The following questions were initialized in the database but never reached because the quiz ended early:
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for q_num in unanswered_questions %}
+            <span style="background: #c53030; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
+                Q{{ q_num }}
+            </span>
+            {% endfor %}
+        </div>
+        <p style="color: #c53030; margin: 10px 0 0 0; font-size: 12px; font-style: italic;">
+            These questions remain as NULL in the database (status: "not_reached").
+        </p>
+    </div>
+    {% endif %}
 </div>
+
+<style>
+.result-correct {
+    color: #48bb78;
+    font-weight: bold;
+}
+
+.result-incorrect {
+    color: #f56565;
+    font-weight: bold;
+}
+</style>
 {% endblock %}
