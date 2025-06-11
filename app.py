@@ -181,12 +181,13 @@ def quiz():
 
 @app.route('/answer', methods=['POST'])
 def answer():
-    """Process user's answer"""
+    """Process user's answer or skip"""
     if 'quiz_questions' not in session:
         return jsonify({'error': 'No active quiz'}), 400
 
     user_answer = request.json.get('answer')
     time_to_answer = request.json.get('time_to_answer', 0)
+    is_skipped = request.json.get('skipped', False)
     current_q = session['current_question']
     questions = session['quiz_questions']
 
@@ -194,17 +195,30 @@ def answer():
         return jsonify({'error': 'Quiz completed'}), 400
 
     question = questions[current_q]
-    is_correct = (user_answer == question['correct_answer'])
 
-    # Store the answer
-    answer_data = {
-        'test_number': current_q + 1,
-        'regex': question['regex'],
-        'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
-        'user_answer': user_answer,
-        'is_correct': 'YES' if is_correct else 'NO',
-        'time_to_answer': time_to_answer
-    }
+    # Handle skipped questions
+    if is_skipped:
+        answer_data = {
+            'test_number': current_q + 1,
+            'regex': question['regex'],
+            'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
+            'user_answer': 'SKIPPED',
+            'is_correct': 'SKIPPED',
+            'time_to_answer': time_to_answer,
+            'skipped': True
+        }
+    else:
+        # Handle normal answers
+        is_correct = (user_answer == question['correct_answer'])
+        answer_data = {
+            'test_number': current_q + 1,
+            'regex': question['regex'],
+            'is_regex_refactor': 'YES' if question['type'] == 'refactor_regex' else 'NO',
+            'user_answer': user_answer,
+            'is_correct': 'YES' if is_correct else 'NO',
+            'time_to_answer': time_to_answer,
+            'skipped': False
+        }
 
     if 'detailed_answers' not in session:
         session['detailed_answers'] = []
@@ -220,15 +234,21 @@ def answer():
 @app.route('/results')
 def results():
     """Display quiz results and save to MongoDB"""
-    global client, db, collection  # Move this to the top of the function
+    global client, db, collection
 
     if 'detailed_answers' not in session:
         return redirect(url_for('consent'))
 
     detailed_answers = session['detailed_answers']
-    correct_count = sum(1 for answer in detailed_answers if answer['is_correct'] == 'YES')
+
+    # Calculate correct answers and answered questions (excluding skipped)
+    correct_count = sum(1 for answer in detailed_answers if answer.get('is_correct') == 'YES')
+    skipped_count = sum(1 for answer in detailed_answers if answer.get('skipped', False))
+    answered_count = len(detailed_answers) - skipped_count
     total_questions = len(detailed_answers)
-    score = (correct_count / total_questions) * 100 if total_questions > 0 else 0
+
+    # Calculate score based on answered questions only
+    score = (correct_count / answered_count * 100) if answered_count > 0 else 0
 
     # Calculate completion time
     start_time = datetime.fromisoformat(session.get('start_time', datetime.utcnow().isoformat()))
@@ -242,6 +262,8 @@ def results():
         'end_time': end_time,
         'total_duration_seconds': duration_seconds,
         'total_questions': total_questions,
+        'answered_questions': answered_count,
+        'skipped_questions': skipped_count,
         'correct_answers': correct_count,
         'score_percentage': score,
         'detailed_answers': detailed_answers
@@ -253,11 +275,12 @@ def results():
         try:
             result = collection.insert_one(quiz_result)
             print(f"✅ Quiz result saved to MongoDB with ID: {result.inserted_id}")
-            print(f"Stored {len(detailed_answers)} detailed answers")
+            print(
+                f"Stored {len(detailed_answers)} detailed answers ({answered_count} answered, {skipped_count} skipped)")
             saved_to_db = True
         except Exception as e:
             print(f"❌ Error storing results in MongoDB: {e}")
-            # Try to reconnect - global already declared at function start
+            # Try to reconnect
             client = get_mongo_client()
             if client:
                 db = client['regex-quiz']
@@ -271,9 +294,6 @@ def results():
 
     if not saved_to_db:
         print(f"⚠️ Results NOT saved to database. Quiz ID: {quiz_result['quiz_id']}")
-        # You could implement local file storage here as backup
-        # with open(f"results_{quiz_result['quiz_id']}.json", 'w') as f:
-        #     json.dump(quiz_result, f, default=str)
 
     return render_template('results.html',
                            correct_count=correct_count,
@@ -282,7 +302,6 @@ def results():
                            duration=duration_seconds,
                            answers=detailed_answers,
                            saved_to_db=saved_to_db)
-
 @app.route('/restart')
 def restart():
     """Clear session and restart quiz"""

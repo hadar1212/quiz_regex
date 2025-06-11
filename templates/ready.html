@@ -32,8 +32,9 @@
             <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
                 <li><strong>20 questions</strong> randomly selected</li>
                 <li><strong>True/False format</strong> - Does the string match the regex?</li>
+                <li><strong>Skip option</strong> available for any question</li>
                 <li><strong>No time limit</strong> per question (but timing is tracked)</li>
-                <li><strong>Can't go back</strong> once you answer</li>
+                <li><strong>Can't go back</strong> once you answer or skip</li>
             </ul>
         </div>
 
@@ -47,7 +48,7 @@
                 <li><strong>Rules button</strong> on every question</li>
                 <li><strong>Press 'H'</strong> to quickly open rules</li>
                 <li><strong>Complete regex reference</strong> available</li>
-                <li><strong>No penalty</strong> for checking rules</li>
+                <li><strong>No penalty</strong> for checking rules or skipping</li>
             </ul>
         </div>
 
@@ -60,21 +61,22 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0;">
                 <div>
                     <strong>Answer True:</strong><br>
-                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">1</code> or 
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">1</code> or
                     <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">T</code>
                 </div>
                 <div>
                     <strong>Answer False:</strong><br>
-                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">2</code> or 
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">2</code> or
                     <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">F</code>
+                </div>
+                <div>
+                    <strong>Skip Question:</strong><br>
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">3</code> or
+                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">S</code>
                 </div>
                 <div>
                     <strong>Open Rules:</strong><br>
                     <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">H</code>
-                </div>
-                <div>
-                    <strong>Close Modal:</strong><br>
-                    <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">Escape</code>
                 </div>
             </div>
         </div>

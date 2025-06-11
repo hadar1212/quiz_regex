@@ -40,6 +40,10 @@
             <button id="btn-false" class="btn btn-danger" onclick="submitAnswer(false)">
                 ❌ False - No Match
             </button>
+            <br>
+            <button id="btn-skip" class="btn" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); margin-top: 15px;" onclick="skipQuestion()">
+                ⏭️ Skip Question
+            </button>
         </div>
     </div>
 
@@ -180,6 +184,15 @@
     box-shadow: 0 4px 15px rgba(56, 161, 105, 0.4);
     transition: all 0.2s ease;
 }
+
+#btn-skip {
+    transition: all 0.3s ease;
+}
+
+#btn-skip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(237, 137, 54, 0.4);
+}
 </style>
 {% endblock %}
 
@@ -213,6 +226,15 @@ window.onload = function() {
 
 function submitAnswer(userAnswer) {
     if (answered) return;
+    sendResponse(userAnswer, false);
+}
+
+function skipQuestion() {
+    if (answered) return;
+    sendResponse(null, true);
+}
+
+function sendResponse(userAnswer, isSkipped) {
     answered = true;
 
     // Stop timer
@@ -222,22 +244,38 @@ function submitAnswer(userAnswer) {
     // Disable buttons
     document.getElementById('btn-true').disabled = true;
     document.getElementById('btn-false').disabled = true;
+    document.getElementById('btn-skip').disabled = true;
 
-    // Send answer to server with timing
+    // Prepare request data
+    const requestData = {
+        time_to_answer: answerTime,
+        skipped: isSkipped
+    };
+
+    if (!isSkipped) {
+        requestData.answer = userAnswer;
+    }
+
+    // Send response to server
     fetch('/answer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            answer: userAnswer,
-            time_to_answer: answerTime
-        })
+        body: JSON.stringify(requestData)
     })
     .then(response => response.json())
     .then(data => {
         const feedback = document.getElementById('feedback');
+        const feedbackContent = document.getElementById('feedback-content');
         const nextBtn = document.getElementById('next-btn');
+
+        // Update feedback message
+        if (isSkipped) {
+            feedbackContent.innerHTML = '⏭️ Question skipped!';
+        } else {
+            feedbackContent.innerHTML = '✅ Answer submitted!';
+        }
 
         // Update next button
         if (data.next_question) {
@@ -248,7 +286,7 @@ function submitAnswer(userAnswer) {
             nextBtn.onclick = () => window.location.href = '/results';
         }
 
-        // Show feedback without revealing correct/incorrect
+        // Show feedback
         feedback.style.display = 'block';
     })
     .catch(error => {
@@ -257,6 +295,7 @@ function submitAnswer(userAnswer) {
         answered = false;
         document.getElementById('btn-true').disabled = false;
         document.getElementById('btn-false').disabled = false;
+        document.getElementById('btn-skip').disabled = false;
     });
 }
 
@@ -294,6 +333,8 @@ document.addEventListener('keydown', function(event) {
         submitAnswer(true);
     } else if (event.key === '2' || event.key.toLowerCase() === 'f') {
         submitAnswer(false);
+    } else if (event.key === '3' || event.key.toLowerCase() === 's') {
+        skipQuestion();
     }
 
     // Press 'h' to open help modal
