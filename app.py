@@ -272,11 +272,11 @@ def load_regex_data_from_file(filename="regex_test_data_fixed.json"):
 
 
 def generate_quiz():
-    """Generate a quiz with 10 expressions (20 questions total)"""
+    """Generate a quiz with 8 expressions (16 questions total)"""
     data = load_regex_data_from_file()
 
-    # Select 10 random expressions (or all if less than 10 available)
-    selected_expressions = random.sample(data, min(10, len(data)))
+    # Select 8 random expressions (or all if less than 8 available)
+    selected_expressions = random.sample(data, min(8, len(data)))
 
     questions = []
 
