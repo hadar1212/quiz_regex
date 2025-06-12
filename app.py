@@ -302,13 +302,12 @@ def generate_quiz():
         # CHANGED: Use pre-selected answers instead of random.choice()
         if random.random() < 0.5:
             # Use the SAME correct answer for both questions
-            test_string = correct_answer_text  # ← No more random.choice()
+            answer = correct_answer_text  # ← No more random.choice()
             correct = True
         else:
             # Use the SAME incorrect answer for both questions
-            test_string = incorrect_answer_text  # ← No more random.choice()
+            answer = incorrect_answer_text  # ← No more random.choice()
             correct = False
-
         questions.append({
             'regex': expr['regex'],
             'test_string': answer,
