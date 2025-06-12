@@ -291,13 +291,22 @@ def generate_quiz():
 
     for expr in selected_expressions:
         # Add regex question
+        numbers = random.sample(range(1, 6), 2)
+        number1 = numbers[0]  # Position for correct answer
+        number2 = numbers[1]  # Position for incorrect answer
+
+        # NEW: Select answers using those positions
+        correct_answer_text = expr['5_correct_answers'][number1 - 1]
+        incorrect_answer_text = expr['5_incorrect_answers'][number2 - 1]
+
+        # CHANGED: Use pre-selected answers instead of random.choice()
         if random.random() < 0.5:
-            # Select correct answer (50% probability)
-            answer = random.choice(expr['5_correct_answers'])
+            # Use the SAME correct answer for both questions
+            test_string = correct_answer_text  # ← No more random.choice()
             correct = True
         else:
-            # Select incorrect answer (50% probability)
-            answer = random.choice(expr['5_incorrect_answers'])
+            # Use the SAME incorrect answer for both questions
+            test_string = incorrect_answer_text  # ← No more random.choice()
             correct = False
 
         questions.append({
