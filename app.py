@@ -408,7 +408,7 @@ def rules():
 def sample():
     """Sample question page - Step 3"""
     sample_question = {
-        "regex": r"([\w]*):\/\/(.*)",
+        "regex": r"https://(.*)",
         "test_string": "https://example.com",
         "correct_answer": True
     }
